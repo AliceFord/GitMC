@@ -1,29 +1,28 @@
 {
   "schemaVersion": 1,
-  "id": "modid",
+  "id": "gitmc",
   "version": "${version}",
 
-  "name": "Example Mod",
-  "description": "This is an example description! Tell everyone what your mod is about!",
+  "name": "Github integration for Minecraft",
+  "description": "This mod allows people to back up worlds in github.",
   "authors": [
-    "Me!"
+    "TechieHelper"
   ],
   "contact": {
-    "homepage": "https://fabricmc.net/",
-    "sources": "https://github.com/FabricMC/fabric-example-mod"
+    "homepage": "https://github.com/techiehelper",
+    "sources": "https://github.com/techiehelper/mc-git"
   },
 
   "license": "CC0-1.0",
-  "icon": "assets/modid/icon.png",
+  "icon": "assets/gitmc/icon.png",
 
   "environment": "*",
   "entrypoints": {
     "main": [
-      "net.fabricmc.example.ExampleMod"
+      "com.techiehelper.gitmc.GitMC"
     ]
   },
   "mixins": [
-    "modid.mixins.json"
   ],
 
   "depends": {
