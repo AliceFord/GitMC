@@ -19,7 +19,6 @@ repositories {
 	maven {
 		url "https://libraries.minecraft.net"
 	}
-
 }
 
 dependencies {

@@ -4,7 +4,7 @@
   "version": "${version}",
 
   "name": "Github integration for Minecraft",
-  "description": "This mod allows people to back up worlds in github.",
+  "description": "This mod allows people to back up worlds on github.",
   "authors": [
     "TechieHelper"
   ],
@@ -23,6 +23,7 @@
     ]
   },
   "mixins": [
+    "gitmc.mixins.json"
   ],
 
   "depends": {
