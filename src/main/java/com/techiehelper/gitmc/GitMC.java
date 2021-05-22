@@ -62,12 +62,12 @@ public class GitMC implements ModInitializer {
                             MutableText signInText = Text.of("Click here to sign in to github.").shallowCopy();
                             signInText.setStyle(Style.EMPTY.withUnderline(true).withColor(Formatting.BLUE).withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, "https://github.com/login/device")));
                             displayText(signInText);
-                            displayMessage("Please type /gitmc finishlogin to finish github validation after signing in via the link.", Formatting.GREEN);
+                            displayMessage("Please type /gitmc finishlogin to finish github validation after signing in via the link.");
                             deviceCode = codes.get("device_code");
                         }
                     }
                 } else {
-                    displayMessage("Something went wrong! Please set your username with /gitmcset gitusername=<username>, then use /gitmc login to login.", Formatting.GREEN);
+                    displayMessage("Something went wrong! Please use /gitmc login to login.");
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -75,6 +75,55 @@ public class GitMC implements ModInitializer {
         } else {
             displayMessage("Signed in!");
         }
+    }
+    
+    private static int execute(CommandContext<ServerCommandSource> ctx, String argument) {
+        String command = getString(ctx, "command");
+        if (!isSignedIn && !(command.equals("login") || command.equals("finishlogin"))) {
+            displayMessage(ctx, "You're not signed in! Please use /gitmc login to login.");
+        } else {
+            String cmdOutput = null;
+            switch (command) {
+                case "help":
+                    displayMessage(ctx, "This is the help section of the mod. Most commands are the same as on github, you can find them online at §9https://guides.github.com/introduction/git-handbook/ §a. Some custom commands have been implemented, as seen here:\n");
+                    displayMessage("/gitmc login -> Begins login process to github.");
+                    displayMessage("/gitmc finishlogin -> Ends login process to github.");
+                    break;
+                case "init":
+                    if ((cmdOutput = runCommand("git init")) != null) {
+                        displayMessage(ctx, cmdOutput);
+                    }
+                    break;
+                case "add":
+                    if ((cmdOutput = runCommand("git add " + argument)) != null) {
+                        displayMessage(ctx, cmdOutput);
+                    }
+                    break;
+                case "login":
+                    signIn();
+                    break;
+                case "finishlogin":
+                    HashMap<String, String> tokens = apiClient.validateLogin(deviceCode);
+                    if (apiClient.testToken(tokens.getOrDefault("token", "null"))) {
+                        try {
+                            HashMap<String, String> justTokens = new HashMap<>();
+                            justTokens.put("token", tokens.getOrDefault("token", "null"));
+                            justTokens.put("refresh_token", tokens.getOrDefault("refresh_token", "null"));
+                            writeToFile(getSaveFile(), justTokens);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                            displayMessage("Something went wrong!");
+                        }
+                    } else {
+                        displayMessage("Something went wrong!");
+                    }
+                    break;
+                default:
+                    invalidCommand(ctx);
+                    break;
+            }
+        }
+        return 1;
     }
     
     @Override
@@ -104,53 +153,13 @@ public class GitMC implements ModInitializer {
                         for (String command : VALID_COMMANDS) builder.suggest(command);
                         return builder.buildFuture();
                     })
-                        .executes(ctx -> {
-                            String command = getString(ctx, "command");
-                            if (!isSignedIn && !(command.equals("login") || command.equals("finishlogin"))) {
-                                displayMessage(ctx, "You're not signed in! Please set your username with /gitmcset gitusername=<username>, then use /gitmc login to login.", Formatting.GREEN);
-                            } else {
-                                String cmdOutput = null;
-                                switch (command) {
-                                    case "help":
-                                        displayMessage(ctx, "This is the help section of the mod. Most commands are the same as on github, you can find them online at §9https://guides.github.com/introduction/git-handbook/ §a. Some custom commands have been implemented, as seen here:\n", Formatting.GREEN);
-                                        break;
-                                    case "init":
-                                        if ((cmdOutput = somethingWentWrongTry("git init", ctx)) != null) {
-                                            displayMessage(ctx, cmdOutput);
-                                        }
-                                        break;
-                                    case "login":
-                                        signIn();
-                                        break;
-                                    case "finishlogin":
-                                        HashMap<String, String> tokens = apiClient.validateLogin(deviceCode);
-                                        if (apiClient.testToken(tokens.getOrDefault("token", "null"))) {
-                                            try {
-                                                System.out.println(tokens);
-                                                HashMap<String, String> justTokens = new HashMap<>();
-                                                justTokens.put("token", tokens.getOrDefault("token", "null"));
-                                                justTokens.put("refresh_token", tokens.getOrDefault("refresh_token", "null"));
-                                                writeToFile(getSaveFile(), justTokens);
-                                            } catch (IOException e) {
-                                                e.printStackTrace();
-                                                displayMessage("Something went wrong!");
-                                            }
-                                        } else {
-                                            displayMessage("Something went wrong!");
-                                        }
-                                        break;
-                                    default:
-                                        invalidCommand(ctx);
-                                        break;
-                                }
-                            }
-                            return 1;
-                        })
-                )
-                    .executes(ctx -> {
-                        invalidCommand(ctx);
-                        return 1;
-                    })
+                        .executes(ctx -> execute(ctx, null))
+                    .then(argument("argument", word()))
+                        .executes(ctx -> execute(ctx, getString(ctx, "argument"))))
+                .executes(ctx -> {
+                    invalidCommand(ctx);
+                    return 1;
+                })
             );
         });
         

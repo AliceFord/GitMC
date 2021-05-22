@@ -17,40 +17,36 @@ public class Util {
     public static final UUID VALID_UUID = net.minecraft.util.Util.NIL_UUID;
     public static MinecraftServer server;
     
-    public static String runCommand(String command, CommandContext<ServerCommandSource> ctx) throws IOException {
-        Runtime rt = Runtime.getRuntime();
-        Process proc = rt.exec("cmd /c cd " + ctx.getSource().getMinecraftServer().getSavePath(WorldSavePath.ROOT).toAbsolutePath() + "&" + command);
-    
-        BufferedReader stdInput = new BufferedReader(new
-                InputStreamReader(proc.getInputStream()));
-    
-        BufferedReader stdError = new BufferedReader(new
-                InputStreamReader(proc.getErrorStream()));
-
-        StringBuilder s = new StringBuilder();
-        String c = "";
-        while ((c = stdInput.readLine()) != null) {
-            s.append(c);
-        }
-
-        while ((c = stdError.readLine()) != null) {
-            s.append(c);
-        }
-        proc.destroy();
-        return s.toString();
-    }
-    
-    public static String somethingWentWrongTry(String command, CommandContext<ServerCommandSource> ctx) {
+    public static String runCommand(String command) {
         try {
-            return runCommand(command, ctx);
+            Runtime rt = Runtime.getRuntime();
+            Process proc = rt.exec("cmd /c cd " + server.getSavePath(WorldSavePath.ROOT).toAbsolutePath() + "&" + command);
+        
+            BufferedReader stdInput = new BufferedReader(new
+                    InputStreamReader(proc.getInputStream()));
+        
+            BufferedReader stdError = new BufferedReader(new
+                    InputStreamReader(proc.getErrorStream()));
+    
+            StringBuilder s = new StringBuilder();
+            String c = "";
+            while ((c = stdInput.readLine()) != null) {
+                s.append(c);
+            }
+    
+            while ((c = stdError.readLine()) != null) {
+                s.append(c);
+            }
+            proc.destroy();
+            return s.toString();
         } catch (IOException e) {
-            displayMessage(ctx, "Something went wrong! Here is the error message:\n" + Arrays.toString(e.getStackTrace()), Formatting.RED);
+            displayMessage("Something went wrong! Here is the error message:\n" + Arrays.toString(e.getStackTrace()), Formatting.RED);
             return null;
         }
     }
     
     public static void displayMessage(String message) {
-        displayMessage(server, message, Formatting.WHITE);
+        displayMessage(server, message, Formatting.GREEN);
     }
     
     public static void displayMessage(String message, Formatting formatting) {
@@ -58,7 +54,7 @@ public class Util {
     }
     
     public static void displayMessage(CommandContext<ServerCommandSource> ctx, String message) {
-        displayMessage(ctx.getSource().getMinecraftServer(), message, Formatting.WHITE);
+        displayMessage(ctx.getSource().getMinecraftServer(), message, Formatting.GREEN);
     }
     
     public static void displayMessage(CommandContext<ServerCommandSource> ctx, String message, Formatting formatting) {
@@ -66,7 +62,7 @@ public class Util {
     }
     
     public static void displayMessage(MinecraftServer server, String message) {
-        displayMessage(server, message, Formatting.WHITE);
+        displayMessage(server, message, Formatting.GREEN);
     }
     
     public static void displayMessage(MinecraftServer server, String message, Formatting formatting) {
