@@ -6,6 +6,10 @@ import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.text.ClickEvent;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Style;
+import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.WorldSavePath;
 
@@ -16,18 +20,19 @@ import java.util.HashMap;
 import static com.mojang.brigadier.arguments.StringArgumentType.getString;
 import static com.mojang.brigadier.arguments.StringArgumentType.word;
 import static com.techiehelper.gitmc.Util.*;
-import static net.minecraft.server.command.CommandManager.literal;
 import static net.minecraft.server.command.CommandManager.argument;
+import static net.minecraft.server.command.CommandManager.literal;
 
 public class GitMC implements ModInitializer {
     
     public static final String MODID = "gitmc";
-    public static final String[] VALID_COMMANDS = {"help", "init", "login"};
+    public static final String[] VALID_COMMANDS = {"help", "init", "login", "finishlogin"};
     
     private static final GithubApiClient apiClient = new GithubApiClient();
     
     public static boolean isSignedIn = false;
     private static String gitusername = "";
+    private static String deviceCode = "";
     
     static void invalidCommand(CommandContext<ServerCommandSource> ctx) {
         displayMessage(ctx, "Not a valid command. Use /gitmc help for help.", Formatting.RED);
@@ -54,6 +59,11 @@ public class GitMC implements ModInitializer {
                         } else {
                             HashMap<String, String> codes = apiClient.getOneTimeCode();
                             displayMessage("1 time code: " + codes.get("user_code"));
+                            MutableText signInText = Text.of("Click here to sign in to github.").shallowCopy();
+                            signInText.setStyle(Style.EMPTY.withUnderline(true).withColor(Formatting.BLUE).withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, "https://github.com/login/device")));
+                            displayText(signInText);
+                            displayMessage("Please type /gitmc finishlogin to finish github validation after signing in via the link.", Formatting.GREEN);
+                            deviceCode = codes.get("device_code");
                         }
                     }
                 } else {
@@ -62,6 +72,8 @@ public class GitMC implements ModInitializer {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        } else {
+            displayMessage("Signed in!");
         }
     }
     
@@ -94,7 +106,7 @@ public class GitMC implements ModInitializer {
                     })
                         .executes(ctx -> {
                             String command = getString(ctx, "command");
-                            if (!isSignedIn && !command.equals("login")) {
+                            if (!isSignedIn && !(command.equals("login") || command.equals("finishlogin"))) {
                                 displayMessage(ctx, "You're not signed in! Please set your username with /gitmcset gitusername=<username>, then use /gitmc login to login.", Formatting.GREEN);
                             } else {
                                 String cmdOutput = null;
@@ -109,6 +121,23 @@ public class GitMC implements ModInitializer {
                                         break;
                                     case "login":
                                         signIn();
+                                        break;
+                                    case "finishlogin":
+                                        HashMap<String, String> tokens = apiClient.validateLogin(deviceCode);
+                                        if (apiClient.testToken(tokens.getOrDefault("token", "null"))) {
+                                            try {
+                                                System.out.println(tokens);
+                                                HashMap<String, String> justTokens = new HashMap<>();
+                                                justTokens.put("token", tokens.getOrDefault("token", "null"));
+                                                justTokens.put("refresh_token", tokens.getOrDefault("refresh_token", "null"));
+                                                writeToFile(getSaveFile(), justTokens);
+                                            } catch (IOException e) {
+                                                e.printStackTrace();
+                                                displayMessage("Something went wrong!");
+                                            }
+                                        } else {
+                                            displayMessage("Something went wrong!");
+                                        }
                                         break;
                                     default:
                                         invalidCommand(ctx);

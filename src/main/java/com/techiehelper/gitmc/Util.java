@@ -4,7 +4,9 @@ import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.network.MessageType;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.WorldSavePath;
 
@@ -12,7 +14,7 @@ import java.io.*;
 import java.util.*;
 
 public class Util {
-    public static final UUID VALID_UUID = UUID.fromString("2e26f35f-b6a7-4939-9377-76b1149b4b4d");
+    public static final UUID VALID_UUID = net.minecraft.util.Util.NIL_UUID;
     public static MinecraftServer server;
     
     public static String runCommand(String command, CommandContext<ServerCommandSource> ctx) throws IOException {
@@ -69,6 +71,12 @@ public class Util {
     
     public static void displayMessage(MinecraftServer server, String message, Formatting formatting) {
         server.getPlayerManager().broadcastChatMessage(new LiteralText(message).formatted(formatting), MessageType.SYSTEM, VALID_UUID);
+    }
+    
+    public static void displayText(Text command) {
+        for (ServerPlayerEntity playerEntity : server.getPlayerManager().getPlayerList()) {
+            playerEntity.sendSystemMessage(command, VALID_UUID);
+        }
     }
     
     public static HashMap<String, String> parseFile(File file) {

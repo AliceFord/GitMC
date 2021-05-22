@@ -73,7 +73,7 @@ public class GithubApiClient {
     
     public HashMap<String, String> refreshToken(String refresh_token) {
         Map<String, String> secretsData = Util.parseFile(SECRETS_FILE);
-        String urlParams = "?refresh_token=" + refresh_token + "&grant_type=refresh_token&client_id=Iv1.995c8762575f152c&client_secret=" + secretsData.get("client_secret");
+        String urlParams = "?refresh_token=" + refresh_token + "&grant_type=refresh_token&client_id=" + CLIENT_ID + "&client_secret=" + secretsData.get("client_secret");
         String outputData = "";
         try {
             outputData = makeRequest("https://github.com/login/oauth/access_token", urlParams, RequestMethod.GET);
@@ -100,7 +100,7 @@ public class GithubApiClient {
     public HashMap<String, String> getOneTimeCode() throws GitMCException {
         String output = "";
         try {
-            output = makeRequest("https://github.com/login/device/code", "?client_id=Iv1.995c8762575f152c", RequestMethod.POST);
+            output = makeRequest("https://github.com/login/device/code", "?client_id=" + CLIENT_ID, RequestMethod.POST);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -112,5 +112,16 @@ public class GithubApiClient {
             throw new GitMCException();
         }
         return formattedOutput;
+    }
+    
+    public HashMap<String, String> validateLogin(String deviceCode) {
+        String output = "";
+        try {
+            output = makeRequest("https://github.com/login/oauth/access_token", "?client_id=" + CLIENT_ID + "&device_code=" + deviceCode + "&grant_type=urn:ietf:params:oauth:grant-type:device_code", RequestMethod.POST);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        
+        return formatApiOutput(output);
     }
 }
